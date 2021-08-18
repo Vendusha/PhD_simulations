@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+#Here we load a geometry module and a generator module, change the default
+#values a of a few parameters a bit, and then use them with the G4Launcher to
+#build an actual application which can be controlled in great detail from the
+#command-line.
+
+#############################################################
+#Define geometry:
+import G4GeoSilicon.GeoSilicon as geomodule
+# import G4GeoSilicon.GeoSiliconLGAD as geomodule
+geo = geomodule.create()
+
+#############################################################
+#Define particle generation:
+import Silicon.Common
+Silicon.Common.launch(geo)

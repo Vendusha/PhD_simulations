@@ -1,0 +1,10 @@
+package(USEPKG G4Interfaces)
+
+######################################################################
+
+Package containing geometries for the Silicon simulation project
+
+Primary author(s): PLEASE-PUT-RELEVANT-NAMES-AND-EMAILS-HERE
+
+--> After you have modified this file as needed for your project you can remove this line and commit <NOCOMMIT> <--
+

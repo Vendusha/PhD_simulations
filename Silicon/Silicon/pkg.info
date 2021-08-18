@@ -1,0 +1,11 @@
+package(USEPKG PyAna ScanUtils GriffAnaUtils SimpleHists)
+
+######################################################################
+
+Package containing launch scripts and Griff analysis code for the Silicon simulation project.
+
+PLEASE-DESCRIBE-YOUR-PROJECT-HERE
+
+Primary author(s): PLEASE-PUT-RELEVANT-NAMES-AND-EMAILS-HERE
+
+--> After you have modified this file as needed for your project you can remove this line and commit <NOCOMMIT> <--

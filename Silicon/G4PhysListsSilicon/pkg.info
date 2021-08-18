@@ -1,0 +1,8 @@
+package(USEPKG G4Interfaces)
+
+######################################################################
+
+
+Package providing physics lists for simulation of the recoil processes in the nucleus.
+
+Primary authors: vendula.maulerova@esss.se
