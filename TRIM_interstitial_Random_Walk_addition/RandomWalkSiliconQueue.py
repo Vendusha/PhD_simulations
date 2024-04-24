@@ -8,20 +8,24 @@ from math import floor
 from enum import Enum
 from dataclasses import dataclass
 from random import shuffle, random, seed, choice
+from tqdm import tqdm
 
 seed(0)
 np.random.seed(0)
 
 
-def plot_lattice(displacements, oxygen_map, divacancies, vac_oxygens, trivavancies, step):
+def plot_lattice(displacements, interstitials, oxygen_map, divacancies, vac_oxygens, trivavancies, step):
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection='3d')
     if displacements:
         dx, dy, dz = zip(*displacements)
         ax.scatter(dx, dy, dz, c='blue', marker='o', label=str(len(displacements))+' Displacements')
+    if interstitials:
+        dx, dy, dz = zip(*interstitials)
+        ax.scatter(dx, dy, dz, c='yellow', marker='D', label=str(len(interstitials))+' Interstitials')
     if oxygen_map:
         dx, dy, dz = zip(*oxygen_map)
-        ax.scatter(dx, dy, dz, c='yellow', marker='.', label=f"{len(oxygen_map)} Oxygens")
+        ax.scatter(dx, dy, dz, c='gray', marker='.', label=f"{len(oxygen_map)} Oxygens")
     if divacancies:
         dvx, dvy, dvz = zip(*divacancies)
         ax.scatter(dvx, dvy, dvz, c='red', marker='x', label=str(len(divacancies))+' Divacancies')
@@ -175,6 +179,13 @@ num_displacements = 500
 displacements = set()
 while len(displacements) < num_displacements:
     displacements.add(tuple(np.random.randint(0, lattice_size, size=3)))
+
+#Initial number of interstitials
+num_interstitials = 200
+interstitials = set()
+while len(interstitials) < num_interstitials:
+    interstitials.add(tuple(np.random.randint(0, lattice_size, size=3)))
+
 #Initial number of oxygen
 SAMPLE_SIZE_X = 26000000  # nm
 SAMPLE_SIZE_Y = 26000000  # nm
@@ -190,12 +201,13 @@ divacancies = set()  # Initially no divacancies
 vac_oxygens = set()
 trivacancies = set()
 displacement_count = []
+interstitial_count = []
 divacancy_count = []
 vac_oxygens_count = []
 trivacancy_count = []
 
-for step in range(STEPS):
-    plot_lattice(displacements, oxygen_map, divacancies, vac_oxygens, trivacancies, step)
+for step in tqdm(range(STEPS)):
+    plot_lattice(displacements, interstitials, oxygen_map, divacancies, vac_oxygens, trivacancies, step)
 
     next_divacancies = set(divacancies)
     next_vac_oxygens = set(vac_oxygens)
@@ -203,6 +215,7 @@ for step in range(STEPS):
 
     # Check for potential divacancies
     remaining_displacements = set()
+    remaining_interstitials = set()
     while displacements:
         displacement = displacements.pop()
 
@@ -236,6 +249,8 @@ for step in range(STEPS):
         else:
             remaining_displacements.add(displacement)
 
+    remaining_interstitials = interstitials
+
     # update sets
     divacancies = next_divacancies
     vac_oxygens = next_vac_oxygens
@@ -253,17 +268,31 @@ for step in range(STEPS):
                 moved_displacements.add(displacement)
         # Boundary or invalid move cases are ignored (displacement lost)
     displacements = moved_displacements
+    
+    moved_interstitials = set()
+    for interstitial in remaining_interstitials:
+        move = np.random.randint(-1, 2, size=3)
+        new_position = tuple(np.array(interstitial) + move)
+        if 0 <= min(new_position) < lattice_size and max(new_position) < lattice_size:
+            if new_position not in divacancies and new_position not in vac_oxygens and new_position not in moved_interstitials:
+                moved_interstitials.add(new_position)
+            else:
+                moved_interstitials.add(interstitial)
+        # Boundary or invalid move cases are ignored (interstitials lost)
+    interstitials = moved_interstitials
 
     # Record counts
     displacement_count.append(len(displacements))
+    interstitial_count.append(len(interstitials))
     divacancy_count.append(len(divacancies))
     vac_oxygens_count.append(len(vac_oxygens))
     trivacancy_count.append(len(trivacancies))
 
-plot_lattice(displacements, oxygen_map, divacancies, vac_oxygens, trivacancies, STEPS)
+plot_lattice(displacements, interstitials, oxygen_map, divacancies, vac_oxygens, trivacancies, STEPS)
 
 # Final plot of divacancy and displacement trends
 plt.plot(range(STEPS), displacement_count, label='Displacements')
+plt.plot(range(STEPS), interstitial_count, label='Interstitials')
 plt.plot(range(STEPS), divacancy_count, label='Divacancies')
 plt.plot(range(STEPS), vac_oxygens_count, label='VO')
 plt.plot(range(STEPS), trivacancy_count, label='Trivacancies')

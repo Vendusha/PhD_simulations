@@ -16,7 +16,7 @@ np.random.seed(0)
 
 
 # Lattice size and initialization
-LATTICE_SIZE = 100  # 20x20x20 lattice
+LATTICE_SIZE = 100  # 23.5 x 23.5x 23.5 lattice
 GRID_UNIT = 0.235 # nm
 STEPS = 200  # Number of steps in the simulation
 
@@ -29,6 +29,10 @@ class EntityKind(Enum):
     OXYGEN = 5
     VAC_OXYGEN = 6
     DIVAC_OXYGEN = 7
+    TRIVAC_OXYGEN = 8
+    DIINTERSTITIAL = 9
+    CARBON = 10
+    CARBON_INTERSTITIAL = 11
 
 MOVING_ENTITIES = {EntityKind.VACANCY, EntityKind.INTERSTITIAL}
 
@@ -80,7 +84,7 @@ class Interaction():
 # IMPLEMENT NEW INTERACTIONS HERE (interactant_a is automatically discarded)
 def interaction_vacancy_vacancy(interactant_a, interactant_b, entities, next_entities):  # metrics could be added here as well
     next_entities.divacancy.add(choice(points_on_line(*interactant_a, *interactant_b)))
-    entities.vacancy.discard(interactant_b)
+    entities.vacancy.discard(interactant_b) #Vendy's comment for Eda, shouldn't here be also the interactant_a discarded?, same for interstitials
 
 def interaction_vacancy_divacancy(interactant_a, interactant_b, entities, next_entities):
     next_entities.trivacancy.add(interactant_b)
@@ -110,15 +114,61 @@ def interaction_interstitial_trivacancy(interactant_a, interactant_b, entities, 
     next_entities.trivacancy.discard(interactant_b)
     next_entities.divacancy.add(interactant_b)
 
+def interaction_vacancy_divacancy_oxygen(interactant_a, interactant_b, entities, next_entities):
+    next_entities.trivac_oxygen.add(interactant_b)
+    next_entities.divac_oxygen.discard(interactant_b)
+    entities.divac_oxygen.discard(interactant_b)
+
+def interaction_interstitial_interstitial(interactant_a, interactant_b, entities, next_entities):
+    next_entities.diinterstitial.add(choice(points_on_line(*interactant_a, *interactant_b)))
+    entities.interstitial.discard(interactant_b)
+
+def interaction_vacancy_diinterstitial(interactant_a, interactant_b, entities, next_entities):
+    next_entities.interstitial.add(interactant_b)
+    next_entities.diinterstitial.discard(interactant_b)
+    entities.diinterstitial.discard(interactant_b)
+
+def interaction_interstitial_carbon(interactant_a, interactant_b, entities, next_entities):
+    next_entities.carbon_interstitial.add(interactant_b)
+    next_entities.carbon.discard(interactant_b)
+    entities.carbon.discard(interactant_b)
+
+def interaction_interstitial_divacancy_oxygen(interactant_a, interactant_b, entities, next_entities):
+    next_entities.vac_oxygen.add(interactant_b)
+    next_entities.divac_oxygen.discard(interactant_b)
+    entities.divac_oxygen.discard(interactant_b)
+    
+def interaction_interstitial_trivacancy_oxygen(interactant_a, interactant_b, entities, next_entities):
+    next_entities.divac_oxygen.add(interactant_b)
+    next_entities.trivac_oxygen.discard(interactant_b)
+    entities.trivac_oxygen.discard(interactant_b)
+
+def interaction_vacancy_carbon_interstitial(interactant_a, interactant_b, entities, next_entities):
+    next_entities.carbon.add(interactant_b)
+    next_entities.carbon_interstitial.discard(interactant_b)
+    entities.carbon_interstitial.discard(interactant_b)
+
+def interaction_interstitial_vacancy_oxygen(interactant_a, interactant_b, entities, next_entities):
+    next_entities.oxygen.add(interactant_b)
+    next_entities.vac_oxygen.discard(interactant_b)
+    entities.vac_oxygen.discard(interactant_b)
+
 INTERACTION_KINDS = [
     InteractionKind(EntityKind.VACANCY, EntityKind.VACANCY, 7.7/GRID_UNIT/10, 0.107, interaction_vacancy_vacancy),
     InteractionKind(EntityKind.VACANCY, EntityKind.DIVACANCY, 9.9/GRID_UNIT/10, 0.226, interaction_vacancy_divacancy),
     InteractionKind(EntityKind.VACANCY, EntityKind.OXYGEN, 5.0/GRID_UNIT/10, 0.029, interaction_vacancy_oxygen),
     InteractionKind(EntityKind.VACANCY, EntityKind.VAC_OXYGEN, 8.4/GRID_UNIT/10, 0.139, interaction_vacancy_vac_oxygen),
     InteractionKind(EntityKind.VACANCY, EntityKind.INTERSTITIAL, 16.0/GRID_UNIT/10, 0.956, interaction_vacancy_interstitial),
-
     InteractionKind(EntityKind.INTERSTITIAL, EntityKind.DIVACANCY, 15.8/GRID_UNIT/10, 0.934, interaction_interstitial_divacancy),
     InteractionKind(EntityKind.INTERSTITIAL, EntityKind.TRIVACANCY, 12.4/GRID_UNIT/10, 0.445, interaction_interstitial_trivacancy),
+    InteractionKind(EntityKind.VACANCY, EntityKind.DIVAC_OXYGEN, 5.7/GRID_UNIT/10, 0.043, interaction_vacancy_divacancy_oxygen),
+    InteractionKind(EntityKind.INTERSTITIAL, EntityKind.INTERSTITIAL, 7.9/GRID_UNIT/10, 0.118, interaction_interstitial_interstitial),
+    InteractionKind(EntityKind.VACANCY, EntityKind.DIINTERSTITIAL, 15.3/GRID_UNIT/10, 0.849, interaction_vacancy_diinterstitial),
+    InteractionKind(EntityKind.INTERSTITIAL, EntityKind.CARBON, 14.2/GRID_UNIT/10, 0.673, interaction_interstitial_carbon),
+    InteractionKind(EntityKind.INTERSTITIAL, EntityKind.DIVAC_OXYGEN, 5.1/GRID_UNIT/10, 0.031, interaction_interstitial_divacancy_oxygen),
+    InteractionKind(EntityKind.INTERSTITIAL, EntityKind.TRIVAC_OXYGEN, 11.7/GRID_UNIT/10, 0.374, interaction_interstitial_trivacancy_oxygen),
+    InteractionKind(EntityKind.VACANCY, EntityKind.CARBON_INTERSTITIAL, 8.6/GRID_UNIT/10, 0.149, interaction_vacancy_carbon_interstitial),
+    InteractionKind(EntityKind.INTERSTITIAL, EntityKind.VAC_OXYGEN, 8.6/GRID_UNIT/10, 0.149, interaction_interstitial_vacancy_oxygen),
 ]
 # /IMPLEMENT NEW INTERACTIONS HERE
 
@@ -130,13 +180,17 @@ class PlotFormat():
 
 # ADD FORMAT FOR NEW ENTITIES HERE
 plot_format = {
-    EntityKind.VACANCY: PlotFormat("cornflowerblue", "o", "Vacancies"),
-    EntityKind.INTERSTITIAL: PlotFormat("gold", "D", "Interstitials"),
+    EntityKind.VACANCY: PlotFormat("cornflowerblue", "o", "$Vacancy_{init}$"),
+    EntityKind.INTERSTITIAL: PlotFormat("gold", "D", "$Interstitials_{init}$"),
     EntityKind.OXYGEN: PlotFormat("paleturquoise", ".", "Oxygens"),
     EntityKind.VAC_OXYGEN: PlotFormat("turquoise", "^", "VO"),
-    EntityKind.DIVAC_OXYGEN: PlotFormat("darkturquoise", "v", "V_2O"),
-    EntityKind.DIVACANCY: PlotFormat("royalblue", "x", "Divacancies"),
-    EntityKind.TRIVACANCY: PlotFormat("navy", "X", "Trivacancies"),
+    EntityKind.DIVAC_OXYGEN: PlotFormat("darkturquoise", "v", "V$_2$O"),
+    EntityKind.DIVACANCY: PlotFormat("royalblue", "x", "V$_2$"),
+    EntityKind.TRIVACANCY: PlotFormat("navy", "X", "V$_3$"),
+    EntityKind.TRIVAC_OXYGEN: PlotFormat("darkblue", "P", "V$_3$O"),
+    EntityKind.DIINTERSTITIAL: PlotFormat("darkgoldenrod", "d", "I$_2$"),
+    EntityKind.CARBON: PlotFormat("black", "s", "Carbons"),
+    EntityKind.CARBON_INTERSTITIAL: PlotFormat("gray", "P", "C$_I$"),
 }
 
 def plot_lattice(entities, step):
@@ -144,6 +198,8 @@ def plot_lattice(entities, step):
     ax = fig.add_subplot(111, projection='3d')
 
     for entity_kind in EntityKind:
+        if entity_kind == EntityKind.OXYGEN or entity_kind == EntityKind.CARBON:
+            continue  # Skip oxygen
         if (entities_to_plot := entities.get_kind(entity_kind)):
             format = plot_format[entity_kind]
             dx, dy, dz = zip(*entities_to_plot)
@@ -155,15 +211,15 @@ def plot_lattice(entities, step):
     ax.set_zlim(0, LATTICE_SIZE - 1)
     
     # Set tick labels to show only whole numbers
-    ticks = range(0, LATTICE_SIZE, 1)  # Change the step if necessary for very large lattices
+    ticks = range(0, LATTICE_SIZE, 10)  # Change the step if necessary for very large lattices
     ax.set_xticks(ticks)
     ax.set_yticks(ticks)
     ax.set_zticks(ticks)
 
     # Axis labels and legend
-    ax.set_xlabel('X axis')
-    ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
+    ax.set_xlabel('X [2.35 A]')
+    ax.set_ylabel('Y [2.35 A]')
+    ax.set_zlabel('Z [2.35 A]')
     ax.legend()
 
     # Title and saving the plot
@@ -262,21 +318,23 @@ while len(entities.vacancy) < num_displacements:
     entities.vacancy.add(tuple(np.random.randint(0, LATTICE_SIZE, size=3)))
 
 # Initialize interstitials
-num_interstitials = 200
+num_interstitials = 500
 while len(entities.interstitial) < num_interstitials:
     entities.interstitial.add(tuple(np.random.randint(0, LATTICE_SIZE, size=3)))
 
 # Initialize oxygen
-SAMPLE_SIZE_X = 26000000  # nm
-SAMPLE_SIZE_Y = 26000000  # nm
-SAMPLE_SIZE_Z = 150000  # nm
-SAMPLE_OXYGEN_COUNT = 10**18
+SAMPLE_SIZE_X = 2.6e6  # nm
+SAMPLE_SIZE_Y = 2.6e6  # nm
+SAMPLE_SIZE_Z = 150e3  # nm
+SAMPLE_OXYGEN_COUNT = 1e18
+SAMPLE_CARBON_COUNT = 3e16
 
 number_of_oxygens = floor(SAMPLE_OXYGEN_COUNT / (SAMPLE_SIZE_X * SAMPLE_SIZE_Y * SAMPLE_SIZE_Z) * (LATTICE_SIZE * GRID_UNIT)**3)
 while len(entities.oxygen) < number_of_oxygens:
     entities.oxygen.add(tuple(np.random.randint(0, LATTICE_SIZE, size=3)))
-
-
+number_of_carbons = floor(SAMPLE_CARBON_COUNT / (SAMPLE_SIZE_X * SAMPLE_SIZE_Y * SAMPLE_SIZE_Z) * (LATTICE_SIZE * GRID_UNIT)**3)
+while len(entities.carbon) < number_of_carbons:
+    entities.carbon.add(tuple(np.random.randint(0, LATTICE_SIZE, size=3)))
 # Initialize metrics
 interaction_counts = defaultdict(int)
 
@@ -354,14 +412,39 @@ plot_lattice(entities, STEPS)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
 
 for entity_kind in EntityKind:
+    if entity_kind == EntityKind.OXYGEN or entity_kind == EntityKind.CARBON:
+        continue
     format = plot_format[entity_kind]
     ax1.plot(range(STEPS + 1), entity_counts.get_kind(entity_kind), label=format.label)
 ax1.set_xlabel('Step')
 ax1.set_ylabel('Count')
 ax1.set_title('Simulation Results Over Time')
 ax1.legend()
+print(interaction_counts.keys())
+key_mapping = {
+    'Vacancy Vacancy': 'V+V',
+    'Vacancy Interstitial': 'V+I',
+    'Interstitial Divacancy': 'I+V2',
+    'Vacancy Divacancy': 'V+V2',
+    'Vacancy Oxygen': 'V+O',
+    'Vacancy Vac_oxygen': 'V+VO',
+    'Vacancy Divac_oxygen': 'V+V2O',
+    'Vacancy Diinterstitial': 'V+I2',
+    'Interstitial Interstitial': 'I+I',
+    'Interstitial Divacancy': 'I+V2',
+    'Interstitial Trivacancy': 'I+V3',
+    'Interstitial_Divac_oxygen': 'I+V2O',
+    'Interstitial Carbon': 'C+I'
 
-ax2.bar(interaction_counts.keys(), interaction_counts.values(), color='tab:blue')
+    
+}
+
+# Update the interaction_counts dictionary to use the new abbreviated keys
+abbreviated_interaction_counts = {key_mapping[key]: value for key, value in interaction_counts.items() if key in key_mapping}
+
+# Now plot using the updated dictionary
+ax2.bar(abbreviated_interaction_counts.keys(), abbreviated_interaction_counts.values(), color='tab:blue')
+ax2.set_title('Interaction Counts')
 ax2.set_title('Interaction counts')
 
 plt.savefig(f'{OUTPUT_DIR}/final_counts.png')

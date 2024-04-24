@@ -18,6 +18,8 @@ class RecoilsFrom1PKA:
         self.ion_origin = 0
         self.ion_energy = 0
         self.ion_position = []
+        self.last_ion_energy = 0
+        self.last_ion_position = []
         self.vacancies_total = 0
         self.vacancies = []
         self.slices_2d = [[] for i in range(100)]
@@ -107,6 +109,14 @@ def load_data(folder, particle):
                 continue
             if line[2:5] == "Ion":
                 recoil_index += 1
+            elif line[0]== "³" and ("Start of New Cascade" in line):
+                last_ion_energy= line.split("³")[2]
+                x_last = line.split("³")[3]
+                y_last = line.split("³")[4]
+                z_last = line.split("³")[5]
+                position_last = [float(x_last) / 10000, float(y_last) / 10000, float(z_last) / 10000]
+                PKA[recoil_index-1].last_ion_energy = last_ion_energy
+                PKA[recoil_index-1].last_ion_position = position_last
             if line[0] == "Û":
                 try:
                     _, _, proton_number, energy, x, y, z, vac, repl, _ = line.split()

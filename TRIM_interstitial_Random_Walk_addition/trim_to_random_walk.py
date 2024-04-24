@@ -4,8 +4,9 @@ import argparse
 import pandas as pd
 from scipy.interpolate import interp1d
 import load_trim_insert_interstitials as lti
+from copy import deepcopy
 ####TODO: the first interstitial is at the same place where there was a vacancy
-def calculate_interstitials(track_data, energy_data, energy_distance_file):
+def calculate_interstitials(track_data, energy_data, energy_distance_file, initial_position):
     # Load the energy to distance mapping
     energy_distance_df = pd.read_csv(energy_distance_file)
     energy_distance_df.rename(columns={'Column_A': 'Distance (A)'}, inplace=True)
@@ -15,7 +16,7 @@ def calculate_interstitials(track_data, energy_data, energy_distance_file):
                                    kind='linear', fill_value='extrapolate')
 
     # Calculate displacement vectors from the initial position
-    initial_position = track_data[0]
+    initial_position = initial_position
     vectors = track_data - initial_position
 
     # Convert from micrometers to angstroms (1 um = 10000 A)
@@ -52,9 +53,11 @@ PKA, no_inc = lti.load_data(folder, particle)
 for pka in PKA:
     track = pka.recoil_positions
     track.append(pka.ion_position)
-    track = np.asarray(track)
-    energy_i = np.append(pka.recoil_energies, pka.ion_energy)
-    interstitial_positions = calculate_interstitials(track, energy_i, "Energy_to_distance.csv")
+    track = np.asarray(track)  
+    energy_i = np.append(pka.recoil_energies, pka.last_ion_energy)
+    interstitial_track = np.copy(track)
+    interstitial_track[-1] = pka.last_ion_position
+    interstitial_positions = calculate_interstitials(interstitial_track, energy_i, "Energy_to_distance.csv", initial_position=pka.ion_position)
     x, y, z = zip(*track)
     x_i, y_i, z_i = zip(*interstitial_positions)
     for array in [x_i, y_i, z_i, x, y, z]:
